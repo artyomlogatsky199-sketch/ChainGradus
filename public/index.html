@@ -8,42 +8,45 @@
         .dark-box { background: #121212; border: 1px solid #261212; border-top: 3px solid #731c1c; padding: 40px 30px; border-radius: 6px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
         h2 { color: #d93636; font-size: 24px; margin-bottom: 15px; font-weight: 500; letter-spacing: 0.5px; }
         p { color: #808080; font-size: 14px; line-height: 1.6; margin-bottom: 30px; }
-        .tg-wrapper { display: inline-block; min-height: 40px; width: 100%; text-align: center; }
-        .error-hint { display: none; color: #a63232; font-size: 13px; margin-top: 15px; line-height: 1.5; background: #1a0b0b; padding: 12px; border-radius: 4px; border: 1px solid #3d1414; text-align: center; }
+        .go-btn { display: block; background: #8c1f1f; color: #fff; text-decoration: none; padding: 14px 20px; border-radius: 4px; font-weight: bold; font-size: 15px; transition: 0.2s; border: 1px solid #3d1414; }
+        .go-btn:hover { background: #b32727; box-shadow: 0 0 15px rgba(179,39,39,0.3); }
+        .status-text { margin-top: 20px; font-size: 12px; color: #555; font-style: italic; }
     </style>
 </head>
 <body>
     <div class="dark-box">
         <h2>Вход в обитель</h2>
-        <p>Для подтверждения личности авторизуйтесь через официальный шлюз Telegram.</p>
+        <p>Для безопасной идентификации нажмите кнопку ниже и запустите нашего официального бота в Telegram.</p>
         
-        <div class="tg-wrapper">
-            <script async src="https://telegram.org" 
-                    data-telegram-login="ChainGradusBot" 
-                    data-size="large" 
-                    data-radius="4" 
-                    data-onauth="onTelegramAuth(user)" 
-                    data-request-access="write"></script>
-            
-            <div id="block-hint" class="error-hint">
-                ⚠️ Кнопка авторизации заблокирована вашим провайдером или браузером.<br><br>
-                <strong>Как зайти:</strong> Откройте страницу в <u>режиме Инкогнито</u> или зайдите с телефона через <u>мобильный интернет (без Wi-Fi)</u>.
-            </div>
-        </div>
+        <a id="auth-link" href="#" target="_blank" class="go-btn">АВТОРИЗОВАТЬСЯ ЧЕРЕЗ TELEGRAM</a>
+        <div class="status-text">Ожидание подтверждения от бота...</div>
     </div>
 
     <script>
-        function onTelegramAuth(user) {
-            localStorage.setItem('tg_logged_user', JSON.stringify(user));
-            window.location.href = 'profile.html';
-        }
+        // Генерируем случайный уникальный токен сессии для текущей вкладки
+        const authCode = Math.random().toString(36).substring(2, 10) + Date.now().toString().substring(8);
+        
+        // Ссылка перекидывает прямо в вашего бота и передает этот секретный код
+        document.getElementById('auth-link').href = `https://t.me{authCode}`;
 
-        setTimeout(() => {
-            const iframe = document.querySelector('iframe[id^="tg-iframe"]') || document.querySelector('.tgme_widget_login');
-            if (!iframe) {
-                document.getElementById('block-hint').style.display = 'block';
-            }
-        }, 3000);
+        // Каждую секунду спрашиваем бэкенд, подтвердил ли юзер вход через ТГ
+        const checkInterval = setInterval(async () => {
+            try {
+                const res = await fetch('/api/check-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: authCode })
+                });
+                const data = await res.json();
+                
+                if (data.success && data.user) {
+                    clearInterval(checkInterval);
+                    // Сохраняем НАСТОЯЩИЕ данные ТГ, которые перехватил сервер
+                    localStorage.setItem('tg_logged_user', JSON.stringify(data.user));
+                    window.location.href = 'profile.html';
+                }
+            } catch (e) {}
+        }, 1500);
 
         if (localStorage.getItem('tg_logged_user')) window.location.href = 'profile.html';
     </script>
