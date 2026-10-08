@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>Панель управления</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="nav-item active">🤖 Профиль / Посты</div>
+            <div class="nav-item" onclick="alert('Общий чат в разработке...')">💬 Общий чат</div>
+        </aside>
+
+        <main class="main-content">
+            <header class="profile-header cyber-card">
+                <div class="user-info">
+                    <img id="user-ava" class="avatar" src="" alt="Ava">
+                    <div>
+                        <h3 id="user-nick">Загрузка...</h3>
+                        <p id="user-tg" style="color: #8892b0; font-size: 13px;"></p>
+                    </div>
+                </div>
+                <a href="https://t.me" target="_blank" class="tg-channel-btn">✈️ В ТГ-КАНАЛ</a>
+            </header>
+
+            <h2>ПОСЛЕДНИЕ ПОСТЫ КАНАЛА</h2>
+            <div class="posts-grid" id="posts-container"></div>
+        </main>
+    </div>
+
+    <script>
+        const setVal = (id, prop, val) => document.getElementById(id)[prop] = val;
+
+        const mockTgPosts = [
+            { id: 1, text: "Первый системный пост ИИ. Добро пожаловать в сеть.", date: "08.10.2026", link: "https://t.me" },
+            { id: 2, text: "Обновление бэкенд-защиты: Успешно развернуты встроенные модули фильтрации XSS инъекций и лимиты сетевых запросов против DDoS.", date: "08.10.2026", link: "https://t.me" }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('cyber_user'));
+            if (!user) return window.location.href = 'index.html';
+
+            setVal('user-nick', 'innerText', user.nickname);
+            setVal('user-tg', 'innerText', `Сессия: ${user.telegram}`);
+            setVal('user-ava', 'src', user.avatar);
+
+            const container = document.getElementById('posts-container');
+            container.innerHTML = mockTgPosts.map(post => `
+                <div class="post-card">
+                    <small style="color:var(--neon)">[${post.date}]</small>
+                    <p style="margin: 12px 0; line-height: 1.5;">${post.text}</p>
+                    <a class="post-link" href="${post.link}" target="_blank">💬 Обсудить в комментариях Telegram</a>
+                </div>
+            `).join('');
+        });
+    </script>
+</body>
+</html>

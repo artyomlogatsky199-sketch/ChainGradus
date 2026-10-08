@@ -1,0 +1,36 @@
+:root { --bg: #0a0b10; --card: rgba(20,24,35,0.6); --neon: #00ffcc; --text: #e2e8f0; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Courier New', monospace; }
+
+body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; overflow-x: hidden; }
+.auth-container { margin: auto; width: 100%; max-width: 400px; padding: 20px; }
+
+.cyber-card { 
+    background: var(--card); border: 1px solid rgba(0,255,204,0.2); 
+    padding: 30px; border-radius: 12px; backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(0,255,204,0.05); 
+}
+h2 { text-shadow: 0 0 10px var(--neon); color: var(--neon); margin-bottom: 20px; text-align: center; }
+
+input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 6px; font-size: 14px; }
+input { background: #121620; border: 1px solid #232936; color: #fff; }
+input:focus { border-color: var(--neon); outline: none; }
+button { background: var(--neon); color: #000; font-weight: bold; border: none; cursor: pointer; transition: 0.3s; }
+button:hover { box-shadow: 0 0 15px var(--neon); transform: scale(1.02); }
+
+.layout { display: flex; width: 100%; }
+.sidebar { width: 250px; background: #0f111a; border-right: 1px solid rgba(255,255,255,0.05); padding: 20px; }
+.main-content { flex: 1; padding: 30px; display: flex; flex-direction: column; gap: 30px; }
+
+.nav-item { padding: 12px; color: #8892b0; cursor: pointer; border-radius: 6px; margin-bottom: 8px; }
+.nav-item:hover, .nav-item.active { background: rgba(0,255,204,0.1); color: var(--neon); }
+
+.profile-header { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.user-info { display: flex; align-items: center; gap: 15px; }
+.avatar { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--neon); background: #161b26; }
+
+.tg-channel-btn { font-size: 18px; text-decoration: none; color: var(--neon); animation: pulse 2s infinite; font-weight: bold; }
+.posts-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+.post-card { background: var(--card); border: 1px solid #232936; padding: 20px; border-radius: 8px; }
+.post-link { display: inline-block; margin-top: 15px; color: var(--neon); text-decoration: none; font-size: 13px; }
+
+@keyframes pulse { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; text-shadow: 0 0 10px var(--neon); } }

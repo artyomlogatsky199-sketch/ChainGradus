@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>Вход в Систему</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="cyber-card">
+            <h2>CYBER_AUTH</h2>
+            <form id="regForm">
+                <input type="text" id="nick" placeholder="Ваш никнейм" required>
+                <input type="text" id="tg" placeholder="@Ваш_Телеграм" required>
+                <button type="submit">ИНИЦИИРОВАТЬ ВХОД</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        const postData = async (url, data) => {
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            return res.json();
+        };
+
+        document.getElementById('regForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = { nickname: document.getElementById('nick').value, telegram: document.getElementById('tg').value };
+            const res = await postData('/api/register', data);
+            
+            if (res.success) {
+                localStorage.setItem('cyber_user', JSON.stringify(res.user));
+                window.location.href = 'profile.html';
+            } else {
+                alert(res.error || 'Ошибка входа');
+            }
+        });
+    </script>
+</body>
+</html>
