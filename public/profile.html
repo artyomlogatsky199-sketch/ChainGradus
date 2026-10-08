@@ -5,54 +5,130 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="layout">
-        <aside class="sidebar">
-            <div class="nav-item active">🤖 Профиль / Посты</div>
-            <div class="nav-item" onclick="alert('Общий чат в разработке...')">💬 Общий чат</div>
+    <div class="panel-layout">
+        <!-- Боковое меню -->
+        <aside class="left-bar">
+            <div id="tab-feed-btn" class="menu-btn active" onclick="switchTab('feed')">🌑 Хроника / Профиль</div>
+            <div id="tab-chat-btn" class="menu-btn" onclick="switchTab('chat')">💬 Общая комната</div>
+            <div class="menu-btn" onclick="logout()" style="margin-top: 40px; color: #595959;">Выйти</div>
         </aside>
 
-        <main class="main-content">
-            <header class="profile-header cyber-card">
-                <div class="user-info">
-                    <img id="user-ava" class="avatar" src="" alt="Ava">
-                    <div>
-                        <h3 id="user-nick">Загрузка...</h3>
-                        <p id="user-tg" style="color: #8892b0; font-size: 13px;"></p>
+        <!-- Контент -->
+        <main class="main-viewport">
+            <header class="account-box">
+                <div class="user-meta">
+                    <img id="user-avatar" class="tg-avatar" src="" alt="Avatar">
+                    <div class="name-block">
+                        <h3 id="user-fullname">Загрузка...</h3>
+                        <p id="user-username" style="margin: 0; color: #666; font-size: 13px;"></p>
                     </div>
                 </div>
-                <a href="https://t.me" target="_blank" class="tg-channel-btn">✈️ В ТГ-КАНАЛ</a>
+                <a href="https://t.me" target="_blank" class="tg-link-btn">➔ Наш Telegram</a>
             </header>
 
-            <h2>ПОСЛЕДНИЕ ПОСТЫ КАНАЛА</h2>
-            <div class="posts-grid" id="posts-container"></div>
+            <!-- ВКЛАДКА ЛЕНТЫ -->
+            <div id="view-feed">
+                <h2 class="feed-title">Последние записи</h2>
+                <div class="posts-list" id="feed-container"></div>
+            </div>
+
+            <!-- ВКЛАДКА ОБЩЕГО ЧАТА -->
+            <div id="view-chat" style="display: none;">
+                <h2 class="feed-title">Общий чат</h2>
+                <div class="posts-list" id="chat-box" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                    <!-- Сюда будут прилетать сообщения -->
+                </div>
+                <form id="chat-form" style="display: flex; gap: 10px;">
+                    <input type="text" id="chat-input" placeholder="Напишите что-нибудь в чат..." required style="flex: 1; background: #141414; border: 1px solid #2e0c0c; color: #fff; padding: 12px; border-radius: 4px;">
+                    <button type="submit" style="background: #8a1c1c; color: #fff; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold;">Отправить</button>
+                </form>
+            </div>
         </main>
     </div>
 
     <script>
-        const setVal = (id, prop, val) => document.getElementById(id)[prop] = val;
+        const getEl = (id) => document.getElementById(id);
+        let currentUser = null;
 
-        const mockTgPosts = [
-            { id: 1, text: "Первый системный пост ИИ. Добро пожаловать в сеть.", date: "08.10.2026", link: "https://t.me" },
-            { id: 2, text: "Обновление бэкенд-защиты: Успешно развернуты встроенные модули фильтрации XSS инъекций и лимиты сетевых запросов против DDoS.", date: "08.10.2026", link: "https://t.me" }
+        const channelFeed = [
+            { id: 101, date: "Сегодня в 18:24", text: "Сменили дизайн на более строгий и классический. Убран излишний неон, добавлен общий чат внутри обители.", link: "https://t.me" }
         ];
 
         document.addEventListener('DOMContentLoaded', () => {
-            const user = JSON.parse(localStorage.getItem('cyber_user'));
-            if (!user) return window.location.href = 'index.html';
+            currentUser = JSON.parse(localStorage.getItem('tg_logged_user'));
+            if (!currentUser) return window.location.href = 'index.html';
 
-            setVal('user-nick', 'innerText', user.nickname);
-            setVal('user-tg', 'innerText', `Сессия: ${user.telegram}`);
-            setVal('user-ava', 'src', user.avatar);
+            const fullName = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim();
+            getEl('user-fullname').innerText = fullName;
+            getEl('user-username').innerText = currentUser.username ? `@${currentUser.username}` : 'без юзернейма';
+            getEl('user-avatar').src = currentUser.photo_url || 'https://dicebear.com';
 
-            const container = document.getElementById('posts-container');
-            container.innerHTML = mockTgPosts.map(post => `
-                <div class="post-card">
-                    <small style="color:var(--neon)">[${post.date}]</small>
-                    <p style="margin: 12px 0; line-height: 1.5;">${post.text}</p>
-                    <a class="post-link" href="${post.link}" target="_blank">💬 Обсудить в комментариях Telegram</a>
+            // Рендер постов
+            getEl('feed-container').innerHTML = channelFeed.map(post => `
+                <div class="single-post">
+                    <span class="post-time">${post.date}</span>
+                    <p class="post-text">${post.text}</p>
+                    <a class="comment-redirect" href="${post.link}" target="_blank">Перейти к обсуждению ➔</a>
                 </div>
             `).join('');
+
+            // Логика формы отправки в чат
+            getEl('chat-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = getEl('chat-input');
+                const text = input.value.trim();
+                if (!text) return;
+
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, nickname: currentUser.username || currentUser.first_name })
+                });
+                
+                const result = await res.json();
+                if (result.success) {
+                    input.value = '';
+                    renderChat(result.messages);
+                }
+            });
         });
+
+        // Функция переключения вкладок
+        function switchTab(tab) {
+            if (tab === 'feed') {
+                getEl('view-feed').style.display = 'block';
+                getEl('view-chat').style.display = 'none';
+                getEl('tab-feed-btn').classList.add('active');
+                getEl('tab-chat-btn').classList.remove('active');
+            } else {
+                getEl('view-feed').style.display = 'none';
+                getEl('view-chat').style.display = 'block';
+                getEl('tab-feed-btn').classList.remove('active');
+                getEl('tab-chat-btn').classList.add('active');
+                // При клике на чат — сразу запрашиваем пустую строку сообщений, чтобы подтянуть историю
+                fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: ' ', nickname: ' ' })
+                }).then(r => r.json()).then(data => renderChat(data.messages || []));
+            }
+        }
+
+        function renderChat(messages) {
+            const box = getEl('chat-box');
+            box.innerHTML = messages.map(m => `
+                <div class="single-post" style="padding: 12px; margin-bottom: 8px;">
+                    <strong style="color: #ff4d4d;">@${m.nickname}</strong> <span style="font-size: 11px; color:#595959; margin-left: 10px;">${m.time}</span>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #ccc;">${m.text}</p>
+                </div>
+            `).join('');
+            box.scrollTop = box.scrollHeight; // Скролл вниз
+        }
+
+        function logout() {
+            localStorage.removeItem('tg_logged_user');
+            window.location.href = 'index.html';
+        }
     </script>
 </body>
 </html>
