@@ -9,27 +9,27 @@
         h2 { color: #d93636; font-size: 24px; margin-bottom: 15px; font-weight: 500; letter-spacing: 0.5px; }
         p { color: #808080; font-size: 14px; line-height: 1.6; margin-bottom: 30px; }
         .tg-wrapper { display: inline-block; min-height: 40px; width: 100%; }
-        .fallback-btn { background: #8c1f1f; color: #fff; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; width: 100%; margin-top: 10px; }
-        .fallback-btn:hover { background: #b32727; }
+        .error-hint { display: none; color: #a63232; font-size: 13px; margin-top: 15px; line-height: 1.5; background: #1a0b0b; padding: 12px; border-radius: 4px; border: 1px solid #3d1414; }
     </style>
 </head>
 <body>
     <div class="dark-box">
         <h2>Вход в обитель</h2>
-        <p>Для подтверждения личности и защиты от автоматических систем авторизуйтесь через Telegram.</p>
+        <p>Для подтверждения личности авторизуйтесь через официальный шлюз Telegram.</p>
         
         <div class="tg-wrapper">
-            <!-- Официальный виджет (попробует загрузиться через http) -->
-            <script async src="http://telegram.org" 
+            <!-- Официальный виджет -->
+            <script async src="https://telegram.org" 
                     data-telegram-login="ChainGradusBot" 
                     data-size="large" 
                     data-radius="4" 
                     data-onauth="onTelegramAuth(user)" 
                     data-request-access="write"></script>
             
-            <!-- Запасная кнопка обхода -->
-            <div id="fallback-login" style="display: none;">
-                <button onclick="bypassLogin()" class="fallback-btn">ВОЙТИ НАПРЯМУЮ</button>
+            <!-- Подсказка вместо гостевой кнопки -->
+            <div id="block-hint" class="error-hint">
+                ⚠️ Кнопка авторизации заблокирована вашей сетью или браузером.<br><br>
+                <strong>Как исправить:</strong> Откройте сайт в <u>режиме Инкогнито</u> или зайдите с телефона через <u>мобильный интернет (не Wi-Fi)</u>.
             </div>
         </div>
     </div>
@@ -40,22 +40,11 @@
             window.location.href = 'profile.html';
         }
 
-        function bypassLogin() {
-            // Если виджет заблокирован, создаем гостевой профиль для проверки чата
-            const mockUser = { 
-                first_name: "Странник Обители", 
-                username: "chaingradus_member", 
-                photo_url: "https://dicebear.com" 
-            };
-            localStorage.setItem('tg_logged_user', JSON.stringify(mockUser));
-            window.location.href = 'profile.html';
-        }
-
-        // Таймер проверки: если через 3 секунды синяя кнопка не появилась — активируем обход
+        // Если виджет вырезан сетью провайдера, показываем только инструкцию исправления
         setTimeout(() => {
             const iframe = document.querySelector('iframe[id^="tg-iframe"]') || document.querySelector('.tgme_widget_login');
             if (!iframe) {
-                document.getElementById('fallback-login').style.display = 'block';
+                document.getElementById('block-hint').style.display = 'block';
             }
         }, 3000);
 
