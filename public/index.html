@@ -1,16 +1,22 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8"><title>Авторизация</title>
-    <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8"><title>Вход в обитель</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
+        body { background: #0a0a0a; color: #cccccc; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .dark-box { background: #121212; border: 1px solid #261212; border-top: 3px solid #731c1c; padding: 40px 30px; border-radius: 6px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
+        h2 { color: #d93636; font-size: 24px; margin-bottom: 15px; font-weight: 500; letter-spacing: 0.5px; }
+        p { color: #808080; font-size: 14px; line-height: 1.6; margin-bottom: 30px; }
+        .tg-wrapper { display: inline-block; min-height: 40px; }
+    </style>
 </head>
 <body>
-    <div class="auth-wrapper">
-        <div class="dark-card">
-            <h2>Вход в обитель</h2>
-            <p>Для идентификации личности подтвердите свой аккаунт через Telegram.</p>
-            
-            <!-- Официальный виджет авторизации через вашего бота -->
+    <div class="dark-box">
+        <h2>Вход в обитель</h2>
+        <p>Для подтверждения личности и защиты от автоматических систем авторизуйтесь через Telegram.</p>
+        
+        <div class="tg-wrapper">
             <script async src="https://telegram.org" 
                     data-telegram-login="ChainGradusBot" 
                     data-size="large" 
@@ -20,16 +26,11 @@
         </div>
     </div>
     <script>
-        // Функция срабатывает, когда человек успешно нажал "Войти через Telegram"
         function onTelegramAuth(user) {
             localStorage.setItem('tg_logged_user', JSON.stringify(user));
             window.location.href = 'profile.html';
         }
-        
-        // Защита: если сессия уже есть, сразу кидаем в профиль
-        if (localStorage.getItem('tg_logged_user')) {
-            window.location.href = 'profile.html';
-        }
+        if (localStorage.getItem('tg_logged_user')) window.location.href = 'profile.html';
     </script>
 </body>
 </html>
