@@ -22,14 +22,14 @@
         <div class="status-text">Ожидание подтверждения от бота...</div>
     </div>
 
-    <script>
-        // Генерируем случайный уникальный токен сессии для текущей вкладки
+       <script>
+        // Генерируем случайный уникальный токен сессии
         const authCode = Math.random().toString(36).substring(2, 10) + Date.now().toString().substring(8);
         
-        // Ссылка перекидывает прямо в вашего бота и передает этот секретный код
-        document.getElementById('auth-link').href = `https://t.me{authCode}`;
+        // Используем рабочее зеркало telegram.me вместо заблокированного t.me
+        document.getElementById('auth-link').href = `https://telegram.me{authCode}`;
 
-        // Каждую секунду спрашиваем бэкенд, подтвердил ли юзер вход через ТГ
+        // Каждую секунду опрашиваем бэкенд на предмет подтверждения входа
         const checkInterval = setInterval(async () => {
             try {
                 const res = await fetch('/api/check-auth', {
@@ -41,7 +41,6 @@
                 
                 if (data.success && data.user) {
                     clearInterval(checkInterval);
-                    // Сохраняем НАСТОЯЩИЕ данные ТГ, которые перехватил сервер
                     localStorage.setItem('tg_logged_user', JSON.stringify(data.user));
                     window.location.href = 'profile.html';
                 }
