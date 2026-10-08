@@ -6,15 +6,6 @@ const __dirname = path.resolve();
 const ipRequests = new Map();
 const chatMessages = []; 
 
-// Массив для хранения перехваченных постов канала
-let telegramPosts = [
-    { id: 1, date: "Система", text: "Ожидание новых публикаций из канала 👁‍🗨Градус&Град🕐...", link: "https://t.me" }
-];
-
-// ТОКЕН ВАШЕГО БОТА
-const BOT_TOKEN = '8906638177:AAGh0m80wJ4QynITzskSRitUHR5R2l46_HQ';
-let lastUpdateId = 0;
-
 const clean = (val) => String(val || '').replace(/[<>]/g, '').trim().substring(0, 100);
 
 const checkDdos = (ip) => {
@@ -30,45 +21,6 @@ const sendJson = (res, status, data) => {
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
 };
-
-// Функция циклического парсинга постов через Telegram Long Polling
-const fetchTelegramUpdates = async () => {
-    try {
-        const url = `https://telegram.org{BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=30`; //
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.ok && data.result.length > 0) {
-            for (const update of data.result) {
-                lastUpdateId = update.update_id; //
-
-                // Проверяем, пришел ли пост из канала (channel_post)
-                if (update.channel_post) {
-                    const post = update.channel_post;
-                    const text = post.text || post.caption || "[Медиафайл]";
-                    const date = new Date(post.date * 1000).toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
-                    
-                    // Формируем прямую ссылку на пост, если у канала есть юзернейм, иначе даем общую инвайт-ссылку
-                    const channelName = post.chat.username ? post.chat.username : 'c/xxxxxxxxx';
-                    const postLink = `https://t.me{channelName}/${post.message_id}`;
-
-                    // Добавляем в начало списка постов сайта
-                    telegramPosts.unshift({ id: post.message_id, date, text, link: postLink });
-
-                    // Ограничиваем кэш ленты до 20 постов
-                    if (telegramPosts.length > 20) telegramPosts.pop();
-                }
-            }
-        }
-    } catch (err) {
-        console.error("Ошибка парсинга ТГ:", err.message);
-    }
-    // Запускаем следующий опрос мгновенно после завершения текущего
-    setTimeout(fetchTelegramUpdates, 2000);
-};
-
-// Запуск фонового парсера ТГ-канала
-fetchTelegramUpdates();
 
 const server = http.createServer((req, res) => {
     const clientIp = req.socket.remoteAddress;
@@ -98,7 +50,6 @@ const server = http.createServer((req, res) => {
     } 
     
     else if (req.method === 'POST') {
-        // Эндпоинт отправки сообщений в Чат
         if (req.url === '/api/chat') {
             let body = '';
             req.on('data', chunk => body += chunk);
@@ -119,10 +70,6 @@ const server = http.createServer((req, res) => {
                     sendJson(res, 400, { error: 'Ошибка сервера' });
                 }
             });
-        }
-        // Эндпоинт получения постов ТГ на фронтенд
-        else if (req.url === '/api/get-posts') {
-            sendJson(res, 200, { success: true, posts: telegramPosts });
         }
     }
 });
