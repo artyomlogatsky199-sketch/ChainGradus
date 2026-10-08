@@ -1,38 +1,35 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8"><title>Вход в Систему</title>
+    <meta charset="UTF-8"><title>Авторизация</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="auth-container">
-        <div class="cyber-card">
-            <h2>CYBER_AUTH</h2>
-            <form id="regForm">
-                <input type="text" id="nick" placeholder="Ваш никнейм" required>
-                <input type="text" id="tg" placeholder="@Ваш_Телеграм" required>
-                <button type="submit">ИНИЦИИРОВАТЬ ВХОД</button>
-            </form>
+    <div class="auth-wrapper">
+        <div class="dark-card">
+            <h2>Вход в обитель</h2>
+            <p>Для идентификации личности подтвердите свой аккаунт через Telegram.</p>
+            
+            <!-- Официальный виджет авторизации через вашего бота -->
+            <script async src="https://telegram.org" 
+                    data-telegram-login="ChainGradusBot" 
+                    data-size="large" 
+                    data-radius="4" 
+                    data-onauth="onTelegramAuth(user)" 
+                    data-request-access="write"></script>
         </div>
     </div>
     <script>
-        const postData = async (url, data) => {
-            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            return res.json();
-        };
-
-        document.getElementById('regForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = { nickname: document.getElementById('nick').value, telegram: document.getElementById('tg').value };
-            const res = await postData('/api/register', data);
-            
-            if (res.success) {
-                localStorage.setItem('cyber_user', JSON.stringify(res.user));
-                window.location.href = 'profile.html';
-            } else {
-                alert(res.error || 'Ошибка входа');
-            }
-        });
+        // Функция срабатывает, когда человек успешно нажал "Войти через Telegram"
+        function onTelegramAuth(user) {
+            localStorage.setItem('tg_logged_user', JSON.stringify(user));
+            window.location.href = 'profile.html';
+        }
+        
+        // Защита: если сессия уже есть, сразу кидаем в профиль
+        if (localStorage.getItem('tg_logged_user')) {
+            window.location.href = 'profile.html';
+        }
     </script>
 </body>
 </html>
