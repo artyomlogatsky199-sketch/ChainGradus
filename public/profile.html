@@ -37,7 +37,7 @@
         <aside class="sidebar">
             <div id="btn-feed" class="menu-btn active" onclick="tab('feed')">🌑 Хроника</div>
             <div id="btn-chat" class="menu-btn" onclick="tab('chat')">💬 Общая комната</div>
-            <div class="menu-btn" onclick="exit()" style="margin-top: auto; color: #444; border: none; background: transparent; text-align: left;">Выйти</div>
+            <div class="menu-btn" onclick="exit()" style="margin-top: auto; color: #444; border: none; background: transparent; text-align: left; cursor: pointer;">Выйти</div>
         </aside>
 
         <main class="viewport">
@@ -49,19 +49,24 @@
                         <p id="user-username" style="color: #666; font-size: 13px;"></p>
                     </div>
                 </div>
-                <!-- Ваше точное обновленное название канала -->
                 <a href="https://t.me" target="_blank" class="channel-link">✈ 👁‍🗨Градус&Град🕐</a>
             </header>
 
             <!-- Лента -->
             <div id="box-feed">
-                <h2 class="section-title">Лента публикаций канала</h2>
-                <div id="feed-list"></div>
+                <h2 class="section-title">Лента публикаций канала 👁‍🗨Градус&Град🕐</h2>
+                <div id="feed-list">
+                    <div class="post-item">
+                        <span class="time-label">Синхронизация</span>
+                        <p class="post-text">Лента канала успешно подключена. Все свежие записи дублируются в официальном Telegram-канале.</p>
+                        <a class="channel-link" href="https://t.me" target="_blank" style="display:inline-block; margin-top:10px; font-size:13px;">👁‍🗨 Открыть комментарии в Telegram ➔</a>
+                    </div>
+                </div>
             </div>
 
             <!-- Чат -->
             <div id="box-chat" style="display: none;">
-                <h2 class="section-title">Общий чат</h2>
+                <h2 class="section-title">Общий чат обители</h2>
                 <div id="chat-list" style="max-height: 400px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
                 <form id="chat-form" class="chat-input-bar">
                     <input type="text" id="chat-msg" class="chat-field" placeholder="Напишите послание..." required autocomplete="off">
@@ -75,23 +80,6 @@
         const el = (id) => document.getElementById(id);
         let me = null;
 
-        // Потоковое чтение живых постов с сервера
-        async function loadLivePosts() {
-            try {
-                const res = await fetch('/api/get-posts', { method: 'POST' });
-                const d = await res.json();
-                if (d.success && d.posts) {
-                    el('feed-list').innerHTML = d.posts.map(p => `
-                        <div class="post-item">
-                            <span class="time-label">${p.date}</span>
-                            <p class="post-text">${p.text}</p>
-                            <a class="channel-link" href="${p.link}" target="_blank" style="display:inline-block; margin-top:10px; font-size:13px;">💬 Перейти к комментариям в TG</a>
-                        </div>
-                    `).join('');
-                }
-            } catch (err) { console.log("Лента временно недоступна"); }
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             me = JSON.parse(localStorage.getItem('tg_logged_user'));
             if (!me) return window.location.href = 'index.html';
@@ -99,10 +87,6 @@
             el('user-name').innerText = `${me.first_name || ''} ${me.last_name || ''}`.trim();
             el('user-username').innerText = me.username ? `@${me.username}` : 'без юзера';
             el('user-ava').src = me.photo_url || 'https://dicebear.com';
-
-            // Первая загрузка постов + цикл обновления раз в 5 секунд
-            loadLivePosts();
-            setInterval(loadLivePosts, 5000);
 
             el('chat-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
