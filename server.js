@@ -3,19 +3,18 @@ import fs from 'fs';
 import path from 'path';
 
 const __dirname = path.resolve();
-const users = new Map();
 const ipRequests = new Map();
+const chatMessages = []; // Хранилище сообщений чата в памяти
 
-// Хелперы безопасности
-const clean = (val) => String(val || '').replace(/[<>]/g, '').trim().substring(0, 50);
+const clean = (val) => String(val || '').replace(/[<>]/g, '').trim().substring(0, 100);
 
 const checkDdos = (ip) => {
     const now = Date.now();
     if (!ipRequests.has(ip)) ipRequests.set(ip, []);
-    const timestamps = ipRequests.get(ip).filter(t => now - t < 60000); // 1 минута
-    timestamps.push(now);
-    ipRequests.set(ip, timestamps);
-    return timestamps.length > 60; // Лимит: 60 запросов в минуту
+    const times = ipRequests.get(ip).filter(t => now - t < 60000);
+    times.push(now);
+    ipRequests.set(ip, times);
+    return times.length > 80;
 };
 
 const sendJson = (res, status, data) => {
@@ -23,16 +22,13 @@ const sendJson = (res, status, data) => {
     res.end(JSON.stringify(data));
 };
 
-// Сервер
 const server = http.createServer((req, res) => {
     const clientIp = req.socket.remoteAddress;
+    if (checkDdos(clientIp)) return sendJson(res, 429, { error: 'Слишком много запросов.' });
 
-    if (checkDdos(clientIp)) {
-        return sendJson(res, 429, { error: 'Too many requests. Сбавьте скорость!' });
-    }
-
+    // Обработка статических файлов (GET)
     if (req.method === 'GET') {
-        const safeUrl = req.url === '/' ? '/index.html' : req.url;
+        const safeUrl = req.url === '/' ? '/index.html' : req.url.split('?')[0];
         const filePath = path.join(__dirname, 'public', safeUrl);
 
         if (!filePath.startsWith(path.join(__dirname, 'public'))) {
@@ -42,7 +38,7 @@ const server = http.createServer((req, res) => {
 
         const ext = path.extname(filePath);
         const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript' };
-        
+
         fs.readFile(filePath, (err, content) => {
             if (err) {
                 res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -54,33 +50,34 @@ const server = http.createServer((req, res) => {
         });
     } 
     
-    else if (req.method === 'POST' && req.url === '/api/register') {
+    // Обработка отправки сообщений чата (POST)
+    else if (req.method === 'POST' && req.url === '/api/chat') {
         let body = '';
         req.on('data', chunk => body += chunk);
         req.on('end', () => {
             try {
-                const parsed = JSON.parse(body);
-                const nick = clean(parsed.nickname);
-                const tg = clean(parsed.telegram);
+                const data = JSON.parse(body);
+                const text = clean(data.text);
+                const user = clean(data.nickname);
 
-                if (!nick || !tg) return sendJson(res, 400, { error: 'Заполните поля!' });
-                if (users.has(nick)) return sendJson(res, 400, { error: 'Ник уже занят' });
+                if (!text || !user) return sendJson(res, 400, { error: 'Пустое сообщение' });
 
-                const user = {
-                    nickname: nick,
-                    telegram: tg,
-                    avatar: `https://dicebear.com{encodeURIComponent(nick)}`
-                };
-                users.set(nick, user);
-                sendJson(res, 200, { success: true, user });
+                const msg = { id: Date.now(), nickname: user, text, time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) };
+                chatMessages.push(msg);
+                
+                // Храним только последние 50 сообщений в памяти, чтобы не перегружать сервер
+                if (chatMessages.length > 50) chatMessages.shift();
+
+                sendJson(res, 200, { success: true, messages: chatMessages });
             } catch {
-                sendJson(res, 400, { error: 'Ошибка обработки данных' });
+                sendJson(res, 400, { error: 'Ошибка сервера' });
             }
         });
     }
 });
 
+// Слушаем порт от Render на всех сетевых интерфейсах (0.0.0.0)
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`CyberServer запущен на порту ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Сервер запущен на порту ${PORT}`);
 });
