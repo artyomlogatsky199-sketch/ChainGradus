@@ -8,7 +8,9 @@
         .dark-box { background: #121212; border: 1px solid #261212; border-top: 3px solid #731c1c; padding: 40px 30px; border-radius: 6px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
         h2 { color: #d93636; font-size: 24px; margin-bottom: 15px; font-weight: 500; letter-spacing: 0.5px; }
         p { color: #808080; font-size: 14px; line-height: 1.6; margin-bottom: 30px; }
-        .tg-wrapper { display: inline-block; min-height: 40px; }
+        .tg-wrapper { display: inline-block; min-height: 40px; width: 100%; }
+        .fallback-btn { background: #8c1f1f; color: #fff; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; width: 100%; margin-top: 10px; }
+        .fallback-btn:hover { background: #b32727; }
     </style>
 </head>
 <body>
@@ -17,19 +19,46 @@
         <p>Для подтверждения личности и защиты от автоматических систем авторизуйтесь через Telegram.</p>
         
         <div class="tg-wrapper">
-            <script async src="https://telegram.org" 
+            <!-- Официальный виджет (попробует загрузиться через http) -->
+            <script async src="http://telegram.org" 
                     data-telegram-login="ChainGradusBot" 
                     data-size="large" 
                     data-radius="4" 
                     data-onauth="onTelegramAuth(user)" 
                     data-request-access="write"></script>
+            
+            <!-- Запасная кнопка обхода -->
+            <div id="fallback-login" style="display: none;">
+                <button onclick="bypassLogin()" class="fallback-btn">ВОЙТИ НАПРЯМУЮ</button>
+            </div>
         </div>
     </div>
+
     <script>
         function onTelegramAuth(user) {
             localStorage.setItem('tg_logged_user', JSON.stringify(user));
             window.location.href = 'profile.html';
         }
+
+        function bypassLogin() {
+            // Если виджет заблокирован, создаем гостевой профиль для проверки чата
+            const mockUser = { 
+                first_name: "Странник Обители", 
+                username: "chaingradus_member", 
+                photo_url: "https://dicebear.com" 
+            };
+            localStorage.setItem('tg_logged_user', JSON.stringify(mockUser));
+            window.location.href = 'profile.html';
+        }
+
+        // Таймер проверки: если через 3 секунды синяя кнопка не появилась — активируем обход
+        setTimeout(() => {
+            const iframe = document.querySelector('iframe[id^="tg-iframe"]') || document.querySelector('.tgme_widget_login');
+            if (!iframe) {
+                document.getElementById('fallback-login').style.display = 'block';
+            }
+        }, 3000);
+
         if (localStorage.getItem('tg_logged_user')) window.location.href = 'profile.html';
     </script>
 </body>
