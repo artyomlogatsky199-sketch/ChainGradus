@@ -49,16 +49,17 @@
                         <p id="user-username" style="color: #666; font-size: 13px;"></p>
                     </div>
                 </div>
-                <a href="https://t.me" target="_blank" class="channel-link">✈ Наш Telegram</a>
+                <!-- Ваше точное обновленное название канала -->
+                <a href="https://t.me" target="_blank" class="channel-link">✈ 👁‍🗨Градус&Град🕐</a>
             </header>
 
-            <!-- Окно Ленты постов -->
+            <!-- Лента -->
             <div id="box-feed">
-                <h2 class="section-title">Последние записи</h2>
+                <h2 class="section-title">Лента публикаций канала</h2>
                 <div id="feed-list"></div>
             </div>
 
-            <!-- Окно Общего Чат-рума -->
+            <!-- Чат -->
             <div id="box-chat" style="display: none;">
                 <h2 class="section-title">Общий чат</h2>
                 <div id="chat-list" style="max-height: 400px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;"></div>
@@ -74,9 +75,22 @@
         const el = (id) => document.getElementById(id);
         let me = null;
 
-        const mockFeed = [
-            { date: "Сегодня в 18:24", text: "Сменили структуру. Все стили интегрированы внутрь страниц для обхода сетевого кэширования хостинга.", link: "https://t.me" }
-        ];
+        // Потоковое чтение живых постов с сервера
+        async function loadLivePosts() {
+            try {
+                const res = await fetch('/api/get-posts', { method: 'POST' });
+                const d = await res.json();
+                if (d.success && d.posts) {
+                    el('feed-list').innerHTML = d.posts.map(p => `
+                        <div class="post-item">
+                            <span class="time-label">${p.date}</span>
+                            <p class="post-text">${p.text}</p>
+                            <a class="channel-link" href="${p.link}" target="_blank" style="display:inline-block; margin-top:10px; font-size:13px;">💬 Перейти к комментариям в TG</a>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) { console.log("Лента временно недоступна"); }
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             me = JSON.parse(localStorage.getItem('tg_logged_user'));
@@ -86,13 +100,9 @@
             el('user-username').innerText = me.username ? `@${me.username}` : 'без юзера';
             el('user-ava').src = me.photo_url || 'https://dicebear.com';
 
-            el('feed-list').innerHTML = mockFeed.map(p => `
-                <div class="post-item">
-                    <span class="time-label">${p.date}</span>
-                    <p class="post-text">${p.text}</p>
-                    <a class="channel-link" href="${p.link}" target="_blank" style="display:inline-block; margin-top:10px; font-size:13px;">Обсудить ➔</a>
-                </div>
-            `).join('');
+            // Первая загрузка постов + цикл обновления раз в 5 секунд
+            loadLivePosts();
+            setInterval(loadLivePosts, 5000);
 
             el('chat-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
