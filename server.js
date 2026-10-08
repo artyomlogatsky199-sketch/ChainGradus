@@ -4,7 +4,16 @@ import path from 'path';
 
 const __dirname = path.resolve();
 const ipRequests = new Map();
-const chatMessages = []; // Хранилище сообщений чата в памяти
+const chatMessages = []; 
+
+// Массив для хранения перехваченных постов канала
+let telegramPosts = [
+    { id: 1, date: "Система", text: "Ожидание новых публикаций из канала 👁‍🗨Градус&Град🕐...", link: "https://t.me" }
+];
+
+// ТОКЕН ВАШЕГО БОТА
+const BOT_TOKEN = '8906638177:AAGh0m80wJ4QynITzskSRitUHR5R2l46_HQ';
+let lastUpdateId = 0;
 
 const clean = (val) => String(val || '').replace(/[<>]/g, '').trim().substring(0, 100);
 
@@ -22,11 +31,49 @@ const sendJson = (res, status, data) => {
     res.end(JSON.stringify(data));
 };
 
+// Функция циклического парсинга постов через Telegram Long Polling
+const fetchTelegramUpdates = async () => {
+    try {
+        const url = `https://telegram.org{BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=30`; //
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.ok && data.result.length > 0) {
+            for (const update of data.result) {
+                lastUpdateId = update.update_id; //
+
+                // Проверяем, пришел ли пост из канала (channel_post)
+                if (update.channel_post) {
+                    const post = update.channel_post;
+                    const text = post.text || post.caption || "[Медиафайл]";
+                    const date = new Date(post.date * 1000).toLocaleString('ru-RU', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+                    
+                    // Формируем прямую ссылку на пост, если у канала есть юзернейм, иначе даем общую инвайт-ссылку
+                    const channelName = post.chat.username ? post.chat.username : 'c/xxxxxxxxx';
+                    const postLink = `https://t.me{channelName}/${post.message_id}`;
+
+                    // Добавляем в начало списка постов сайта
+                    telegramPosts.unshift({ id: post.message_id, date, text, link: postLink });
+
+                    // Ограничиваем кэш ленты до 20 постов
+                    if (telegramPosts.length > 20) telegramPosts.pop();
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Ошибка парсинга ТГ:", err.message);
+    }
+    // Запускаем следующий опрос мгновенно после завершения текущего
+    setTimeout(fetchTelegramUpdates, 2000);
+};
+
+// Запуск фонового парсера ТГ-канала
+fetchTelegramUpdates();
+
 const server = http.createServer((req, res) => {
     const clientIp = req.socket.remoteAddress;
     if (checkDdos(clientIp)) return sendJson(res, 429, { error: 'Слишком много запросов.' });
 
-    // Обработка статических файлов (GET)
     if (req.method === 'GET') {
         const safeUrl = req.url === '/' ? '/index.html' : req.url.split('?')[0];
         const filePath = path.join(__dirname, 'public', safeUrl);
@@ -50,34 +97,35 @@ const server = http.createServer((req, res) => {
         });
     } 
     
-    // Обработка отправки сообщений чата (POST)
-    else if (req.method === 'POST' && req.url === '/api/chat') {
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', () => {
-            try {
-                const data = JSON.parse(body);
-                const text = clean(data.text);
-                const user = clean(data.nickname);
+    else if (req.method === 'POST') {
+        // Эндпоинт отправки сообщений в Чат
+        if (req.url === '/api/chat') {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                try {
+                    const data = JSON.parse(body);
+                    const text = clean(data.text);
+                    const user = clean(data.nickname);
 
-                if (!text || !user) return sendJson(res, 400, { error: 'Пустое сообщение' });
+                    if (!text || !user) return sendJson(res, 400, { error: 'Пустое сообщение' });
 
-                const msg = { id: Date.now(), nickname: user, text, time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) };
-                chatMessages.push(msg);
-                
-                // Храним только последние 50 сообщений в памяти, чтобы не перегружать сервер
-                if (chatMessages.length > 50) chatMessages.shift();
+                    const msg = { id: Date.now(), nickname: user, text, time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) };
+                    chatMessages.push(msg);
+                    if (chatMessages.length > 50) chatMessages.shift();
 
-                sendJson(res, 200, { success: true, messages: chatMessages });
-            } catch {
-                sendJson(res, 400, { error: 'Ошибка сервера' });
-            }
-        });
+                    sendJson(res, 200, { success: true, messages: chatMessages });
+                } catch {
+                    sendJson(res, 400, { error: 'Ошибка сервера' });
+                }
+            });
+        }
+        // Эндпоинт получения постов ТГ на фронтенд
+        else if (req.url === '/api/get-posts') {
+            sendJson(res, 200, { success: true, posts: telegramPosts });
+        }
     }
 });
 
-// Слушаем порт от Render на всех сетевых интерфейсах (0.0.0.0)
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
-});
+server.listen(PORT, '0.0.0.0', () => console.log(`CyberServer запущен на порту ${PORT}`));
