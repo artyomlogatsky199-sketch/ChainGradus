@@ -2,133 +2,142 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8"><title>Панель управления</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', serif; }
+        body { background: #0a0a0a; color: #cccccc; min-height: 100vh; display: flex; }
+        .layout { display: flex; width: 100%; }
+        
+        /* Панель разделов слева */
+        .sidebar { width: 260px; background: #070707; border-right: 1px solid #1c1c1c; padding: 30px 20px; display: flex; flex-direction: column; }
+        .menu-btn { padding: 12px 15px; color: #808080; cursor: pointer; border-radius: 4px; margin-bottom: 8px; transition: 0.2s; }
+        .menu-btn:hover, .menu-btn.active { background: #1a0f0f; color: #e64545; border-left: 3px solid #8c1f1f; }
+        
+        /* Главный контент */
+        .viewport { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; }
+        .profile-card { display: flex; align-items: center; justify-content: space-between; background: #121212; border: 1px solid #1a1a1a; padding: 20px 30px; border-radius: 6px; }
+        .user-block { display: flex; align-items: center; gap: 15px; }
+        .ava { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #8c1f1f; object-fit: cover; }
+        .meta h3 { color: #ffffff; font-size: 18px; margin-bottom: 2px; }
+        
+        /* Ссылка на ваш ТГ канал */
+        .channel-link { color: #e64545; text-decoration: none; font-weight: bold; font-size: 14px; transition: 0.2s; }
+        .channel-link:hover { color: #ff5959; }
+        
+        /* Лента и сообщения чата */
+        .section-title { color: #d93636; font-size: 20px; padding-bottom: 8px; border-bottom: 1px solid #261212; margin-bottom: 20px; }
+        .post-item { background: #121212; border: 1px solid #1a1a1a; padding: 20px; border-radius: 6px; margin-bottom: 15px; }
+        .time-label { color: #555555; font-size: 12px; }
+        .post-text { margin-top: 10px; line-height: 1.6; font-size: 15px; }
+        
+        /* Поля чата */
+        .chat-input-bar { display: flex; gap: 10px; margin-top: 15px; }
+        .chat-field { flex: 1; background: #121212; border: 1px solid #261212; color: #fff; padding: 12px; border-radius: 4px; }
+        .chat-field:focus { outline: none; border-color: #8c1f1f; }
+        .send-btn { background: #8c1f1f; color: #fff; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .send-btn:hover { background: #b32727; }
+    </style>
 </head>
 <body>
-    <div class="panel-layout">
-        <!-- Боковое меню -->
-        <aside class="left-bar">
-            <div id="tab-feed-btn" class="menu-btn active" onclick="switchTab('feed')">🌑 Хроника / Профиль</div>
-            <div id="tab-chat-btn" class="menu-btn" onclick="switchTab('chat')">💬 Общая комната</div>
-            <div class="menu-btn" onclick="logout()" style="margin-top: 40px; color: #595959;">Выйти</div>
+    <div class="layout">
+        <aside class="sidebar">
+            <div id="btn-feed" class="menu-btn active" onclick="tab('feed')">🌑 Хроника</div>
+            <div id="btn-chat" class="menu-btn" onclick="tab('chat')">💬 Общая комната</div>
+            <div class="menu-btn" onclick="exit()" style="margin-top: auto; color: #444;">Выйти</div>
         </aside>
 
-        <!-- Контент -->
-        <main class="main-viewport">
-            <header class="account-box">
-                <div class="user-meta">
-                    <img id="user-avatar" class="tg-avatar" src="" alt="Avatar">
-                    <div class="name-block">
-                        <h3 id="user-fullname">Загрузка...</h3>
-                        <p id="user-username" style="margin: 0; color: #666; font-size: 13px;"></p>
+        <main class="viewport">
+            <header class="profile-card">
+                <div class="user-block">
+                    <img id="user-ava" class="ava" src="" alt="Ava">
+                    <div class="meta">
+                        <h3 id="user-name">Загрузка...</h3>
+                        <p id="user-username" style="color: #666; font-size: 13px;"></p>
                     </div>
                 </div>
-                <a href="https://t.me" target="_blank" class="tg-link-btn">➔ Наш Telegram</a>
+                <a href="https://t.me" target="_blank" class="channel-link">✈ Наш Telegram</a>
             </header>
 
-            <!-- ВКЛАДКА ЛЕНТЫ -->
-            <div id="view-feed">
-                <h2 class="feed-title">Последние записи</h2>
-                <div class="posts-list" id="feed-container"></div>
+            <!-- Лента -->
+            <div id="box-feed">
+                <h2 class="section-title">Последние записи</h2>
+                <div id="feed-list"></div>
             </div>
 
-            <!-- ВКЛАДКА ОБЩЕГО ЧАТА -->
-            <div id="view-chat" style="display: none;">
-                <h2 class="feed-title">Общий чат</h2>
-                <div class="posts-list" id="chat-box" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
-                    <!-- Сюда будут прилетать сообщения -->
-                </div>
-                <form id="chat-form" style="display: flex; gap: 10px;">
-                    <input type="text" id="chat-input" placeholder="Напишите что-нибудь в чат..." required style="flex: 1; background: #141414; border: 1px solid #2e0c0c; color: #fff; padding: 12px; border-radius: 4px;">
-                    <button type="submit" style="background: #8a1c1c; color: #fff; border: none; padding: 12px 25px; border-radius: 4px; cursor: pointer; font-weight: bold;">Отправить</button>
+            <!-- Чат -->
+            <div id="box-chat" style="display: none;">
+                <h2 class="section-title">Общий чат</h2>
+                <div id="chat-list" style="max-height: 400px; overflow-y: auto;"></div>
+                <form id="chat-form" class="chat-input-bar">
+                    <input type="text" id="chat-msg" class="chat-field" placeholder="Напишите послание..." required autocomplete="off">
+                    <button type="submit" class="send-btn">Отправить</button>
                 </form>
             </div>
         </main>
     </div>
 
     <script>
-        const getEl = (id) => document.getElementById(id);
-        let currentUser = null;
+        const el = (id) => document.getElementById(id);
+        let me = null;
 
-        const channelFeed = [
-            { id: 101, date: "Сегодня в 18:24", text: "Сменили дизайн на более строгий и классический. Убран излишний неон, добавлен общий чат внутри обители.", link: "https://t.me" }
-        ];
+        const mockFeed = [{ date: "Сегодня в 18:24", text: "Сменили структуру. Все стили интегрированы внутрь страниц для обхода сетевого кэширования хостинга.", link: "https://t.me" }];
 
         document.addEventListener('DOMContentLoaded', () => {
-            currentUser = JSON.parse(localStorage.getItem('tg_logged_user'));
-            if (!currentUser) return window.location.href = 'index.html';
+            me = JSON.parse(localStorage.getItem('tg_logged_user'));
+            if (!me) return window.location.href = 'index.html';
 
-            const fullName = `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim();
-            getEl('user-fullname').innerText = fullName;
-            getEl('user-username').innerText = currentUser.username ? `@${currentUser.username}` : 'без юзернейма';
-            getEl('user-avatar').src = currentUser.photo_url || 'https://dicebear.com';
+            el('user-name').innerText = `${me.first_name || ''} ${me.last_name || ''}`.trim();
+            el('user-username').innerText = me.username ? `@${me.username}` : 'без юзера';
+            el('user-ava').src = me.photo_url || 'https://dicebear.com';
 
-            // Рендер постов
-            getEl('feed-container').innerHTML = channelFeed.map(post => `
-                <div class="single-post">
-                    <span class="post-time">${post.date}</span>
-                    <p class="post-text">${post.text}</p>
-                    <a class="comment-redirect" href="${post.link}" target="_blank">Перейти к обсуждению ➔</a>
+            el('feed-list').innerHTML = mockFeed.map(p => `
+                <div class="post-item">
+                    <span class="time-label">${p.date}</span>
+                    <p class="post-text">${p.text}</p>
+                    <a class="channel-link" href="${p.link}" target="_blank" style="display:inline-block; margin-top:10px; font-size:13px;">Обсудить ➔</a>
                 </div>
             `).join('');
 
-            // Логика формы отправки в чат
-            getEl('chat-form').addEventListener('submit', async (e) => {
+            el('chat-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const input = getEl('chat-input');
+                const input = el('chat-msg');
                 const text = input.value.trim();
                 if (!text) return;
 
                 const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, nickname: currentUser.username || currentUser.first_name })
+                    body: JSON.stringify({ text, nickname: me.username || me.first_name })
                 });
-                
-                const result = await res.json();
-                if (result.success) {
-                    input.value = '';
-                    renderChat(result.messages);
-                }
+                const d = await res.json();
+                if (d.success) { input.value = ''; drawChat(d.messages); }
             });
         });
 
-        // Функция переключения вкладок
-        function switchTab(tab) {
-            if (tab === 'feed') {
-                getEl('view-feed').style.display = 'block';
-                getEl('view-chat').style.display = 'none';
-                getEl('tab-feed-btn').classList.add('active');
-                getEl('tab-chat-btn').classList.remove('active');
-            } else {
-                getEl('view-feed').style.display = 'none';
-                getEl('view-chat').style.display = 'block';
-                getEl('tab-feed-btn').classList.remove('active');
-                getEl('tab-chat-btn').classList.add('active');
-                // При клике на чат — сразу запрашиваем пустую строку сообщений, чтобы подтянуть историю
-                fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: ' ', nickname: ' ' })
-                }).then(r => r.json()).then(data => renderChat(data.messages || []));
+        function tab(t) {
+            const isFeed = t === 'feed';
+            el('box-feed').style.display = isFeed ? 'block' : 'none';
+            el('box-chat').style.display = isFeed ? 'none' : 'block';
+            el('btn-feed').className = `menu-btn ${isFeed ? 'active' : ''}`;
+            el('btn-chat').className = `menu-btn ${isFeed ? '' : 'active'}`;
+            
+            if (!isFeed) {
+                fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: ' ', nickname: ' ' }) })
+                .then(r => r.json()).then(d => drawChat(d.messages || []));
             }
         }
 
-        function renderChat(messages) {
-            const box = getEl('chat-box');
-            box.innerHTML = messages.map(m => `
-                <div class="single-post" style="padding: 12px; margin-bottom: 8px;">
-                    <strong style="color: #ff4d4d;">@${m.nickname}</strong> <span style="font-size: 11px; color:#595959; margin-left: 10px;">${m.time}</span>
-                    <p style="margin: 5px 0 0 0; font-size: 14px; color: #ccc;">${m.text}</p>
+        function drawChat(list) {
+            const box = el('chat-list');
+            box.innerHTML = list.map(m => `
+                <div class="post-item" style="padding: 12px;">
+                    <strong style="color: #e64545;">@${m.nickname}</strong> <span class="time-label" style="margin-left: 10px;">${m.time}</span>
+                    <p class="post-text" style="margin-top: 5px; font-size: 14px;">${m.text}</p>
                 </div>
             `).join('');
-            box.scrollTop = box.scrollHeight; // Скролл вниз
+            box.scrollTop = box.scrollHeight;
         }
 
-        function logout() {
-            localStorage.removeItem('tg_logged_user');
-            window.location.href = 'index.html';
-        }
+        function exit() { localStorage.removeItem('tg_logged_user'); window.location.href = 'index.html'; }
     </script>
 </body>
 </html>
